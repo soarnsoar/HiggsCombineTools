@@ -11,3 +11,6 @@ done
 2)Get limit
 
 combine -M AsymptoticLimits --bypassFrequentistFit Datacards/Datacard_M200/ResolvedSR/LnJJ_mass/datacard.txt
+
+3)add this repo to official HiggsCombineTools dir.
+run_mkExpectedLimitPlot.sh
