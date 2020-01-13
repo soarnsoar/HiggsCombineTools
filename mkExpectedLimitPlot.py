@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import glob
 
 import os, sys
 sys.path.insert(0,'./')
@@ -16,6 +16,8 @@ class CombiPlot:
     self.minLogC = opt.minLogC
     self.maxLogC = opt.maxLogC
     self.inputDir = opt.inputDir
+    self.lumi = opt.lumi
+    self.sqrtS = opt.sqrtS
   def defineStyle(self):
 
     import tdrStyle as tdrStyle
@@ -48,8 +50,8 @@ class CombiPlot:
       if mass in Scales: ## if there's y value(xsec OR BR) scaler for that mass
         Scale=Scales[mass]
 
-
-      fileName=self.inputDir+'/ExpectedLimit_M'+str(mass)+'.txt'
+      #ExpectedLimit_combine_M200
+      fileName=self.inputDir+'/ExpectedLimit_combine_M'+str(mass)+'.txt'
       #print fileName
       f = open(fileName,"r")
       fL = f.readlines()
@@ -138,6 +140,9 @@ class CombiPlot:
     tcanvas = ROOT.TCanvas( 'tcanvas', 'distro',800,600)
     tcanvas.cd()
     tcanvas.SetLogy()
+    
+
+
     # Making tgraphs for each items
     tgr_cls_obs     = ROOT.TGraph(Nmass)
     tgr_cls_exp     = ROOT.TGraph(Nmass)
@@ -209,6 +214,17 @@ class CombiPlot:
     tgr_theory.Draw("l same")
     #tgr_cls_obs.Draw("pl same")
 
+    import CMS_lumi as CMS_lumi
+    
+    CMS_lumi.lumi_13TeV=self.lumi+' fb^{-1}'
+    CMS_lumi.writeExtraText=1
+    CMS_lumi.extraText="Preliminary"
+    CMS_lumi.relPosX = 0.12
+    CMS_lumi.lumi_sqrtS = self.sqrtS
+    iPeriod = 4
+    iPos  = 0
+    CMS_lumi.CMS_lumi(tcanvas, iPeriod, iPos)
+
     leg= ROOT.TLegend(0.65,0.65,0.9,0.84)
     leg.SetFillColor(0)
     leg.SetBorderSize(1)
@@ -225,7 +241,8 @@ class CombiPlot:
 
 
 def GetXsecScale():
-  BR=0.1086*3*0.6741
+  
+  BR=0.1086*3*0.6741 ## to W->l nu 3 flavour , W->qq
   Scales = {
     200:2.7568/BR, ## 200GeV : shape's xsec/BR to lnqq
     210:2.4136/BR,
@@ -282,6 +299,8 @@ if __name__ == "__main__":
   parser.add_argument('--outputDirPlots' , dest='outputDirPlots' , help='output directory'                           , default='./')
   
   parser.add_argument('--inputDir', dest='inputDir', help='input dir path', default='/')
+  parser.add_argument('--sqrtS', dest='sqrtS', help='sqrts', default='13 TeV')
+  parser.add_argument('--lumi', dest='lumi', help='total integrated lumi', default='100')
   
   
   
@@ -329,7 +348,17 @@ if __name__ == "__main__":
   print tag
   
   com = CombiPlot(opt)
-  masses = [200,210,250,300,350,400,500,550,600,650,700,750,800,900,1500,2000,2500,3000,4000,5000]
+  #masses = [200,210,250,300,350,400,500,550,600,650,700,750,800,900,1500,2000,2500,3000,4000,5000]
+  ##Take masses
+  LIST_MASSDIR=glob.glob(opt.inputDir+'/Datacard_M*')
+  masses=[]
+  for MASSDIR in LIST_MASSDIR:
+    #MASSDIR=../Datacards_2016/Datacard_M350
+    MASS=MASSDIR.split('/')[-1].split('M')[-1]
+    print MASS
+    masses.append(int(MASS))
+  masses.sort()
+
   Scales =  GetXsecScale()
   com.mkAsymptoticPlot(masses,Scales)
   
