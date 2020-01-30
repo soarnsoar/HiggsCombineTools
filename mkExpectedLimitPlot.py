@@ -7,6 +7,8 @@ import ROOT
 import logging
 import argparse
 from collections import OrderedDict
+from SM_ggHWW_XSEC import *
+
 
 class CombiPlot:
   def __init__(self,opt):
@@ -18,6 +20,7 @@ class CombiPlot:
     self.inputDir = opt.inputDir
     self.lumi = opt.lumi
     self.sqrtS = opt.sqrtS
+    self.prefix=opt.prefix
   def defineStyle(self):
 
     import tdrStyle as tdrStyle
@@ -51,12 +54,13 @@ class CombiPlot:
         Scale=Scales[mass]
 
       #ExpectedLimit_combine_M200
-      fileName=self.inputDir+'/ExpectedLimit_combine_M'+str(mass)+'.txt'
+      fileName=self.inputDir+'/'+self.prefix+'_M'+str(mass)+'.txt'
       #print fileName
       f = open(fileName,"r")
       fL = f.readlines()
-      values[0].append(mass)
+      
       #row = 1
+      valid=False ## no calculated limit
       for x in fL:
         #print x
         if 'CLsb'  in x:
@@ -67,6 +71,7 @@ class CombiPlot:
         #  values[row].append( float(x.split("BR <")[-1]) )
         #  row +=1
         if 'Expected' in x:
+          valid=True
           if'2.5%' in x: ##Expected  2.5%: r < 4.0104
             #print "Find 2.5%"
             values[2].append(float(x.split('<')[-1])*Scale)
@@ -83,46 +88,23 @@ class CombiPlot:
           elif '97.5%' in x:
             #print "Find 97.5%"
             values[6].append(float(x.split('<')[-1])*Scale)
-          
+      if valid:
+        values[0].append(mass)
       
      #i     # 0       1      2     3    4      5       6
     print 'mass, ,obs    expm2, expm1, exp, expp1, expp2'
     
     
-    for j in range(Nmass):
+    for j in range(len(values[0])):
       print (''.join(str(values[i][j])+' ' for i in range(7) ) )
     return values
 
 
   def GetTheoryValue(self):
     #https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBSMAt13TeV
-    BR=0.1086*3*0.6741
-    Xsecs = {
-      200:2.7568/BR, 
-      210:2.4136/BR,
-      230:1.9234/BR,
-      250:1.5703/BR,
-      270:1.3027/BR,
-      300:1.0015/BR,
-      350:0.6651/BR,
-      400:0.4039/BR,
-      450:0.2783/BR,
-      500:0.2049/BR,
-      550:0.1567/BR,
-      600:0.1227/BR,
-      650:0.0977/BR,
-      700:0.0786/BR,
-      750:0.0639/BR,
-      800:0.0524/BR,
-      900:0.0359/BR,
-      1000:0.0252/BR,
-      1500:0.00503/BR,
-      2000:0.00131/BR,
-      2500:0.000394/BR,
-      3000:0.000128/BR,
-      4000:0.0000115/BR,
-      5000:0.0000019/BR,
-    }
+    #https://twiki.cern.ch/twiki/bin/view/LHCPhysics/CERNYellowReportPageBR2010
+    #BR=0.1086*3*0.6741
+    Xsec={}
     return Xsecs
 
       
@@ -132,15 +114,17 @@ class CombiPlot:
     Nmass = len(masses)
     self.defineStyle()
 
-
+    massbin=masses
     values=self.SetValues(masses,Scales)
-    #values[i][j]= ith mass,
+    masses=values[0]
+    Nmass=len(masses)
+    #values[j][i]= ith mass,
     #j = 0    1     2    3    4    5     6
     #   mass obs expm2 expm1 exp expp1 expp2
     tcanvas = ROOT.TCanvas( 'tcanvas', 'distro',800,600)
     tcanvas.cd()
     tcanvas.SetLogy()
-    
+    tcanvas.SetGrid()
 
 
     # Making tgraphs for each items
@@ -164,7 +148,8 @@ class CombiPlot:
     tgr_cls_exp_pm2.SetFillColor(ROOT.kYellow)
 
     ##Theroy graph
-    Xsecs=self.GetTheoryValue()
+    #Xsecs=self.GetTheoryValue()
+    Xsecs=GetggHWWXsec()
     tgr_theory  = ROOT.TGraph(len(Xsecs))
     tgr_theory.SetFillColor(ROOT.kRed)
     tgr_theory.SetLineColor(ROOT.kRed)
@@ -173,7 +158,7 @@ class CombiPlot:
     idx=0
     for mass, xsec in sorted(Xsecs.items()):
       #print 'idx=',idx
-      print 'mass=',mass
+      #print 'mass=',mass
       
       tgr_theory.SetPoint(idx,mass,xsec)
       
@@ -196,7 +181,7 @@ class CombiPlot:
     if self.maxLogC != None:
       maxy = float(self.maxLogC)
 
-    frame = ROOT.TH2F("frame","",Nmass,min(masses),max(masses),100,miny*0.1,maxy*10)
+    frame = ROOT.TH2F("frame","",len(massbin),min(massbin),max(massbin),100,miny*0.1,maxy*10)
     
     frame.SetYTitle("Limit 95% CL_{s} on #sigma_{X#rightarrowWW} [pb]")
     frame.GetYaxis().SetTitleSize(0.05)
@@ -225,7 +210,8 @@ class CombiPlot:
     iPos  = 0
     CMS_lumi.CMS_lumi(tcanvas, iPeriod, iPos)
 
-    leg= ROOT.TLegend(0.65,0.65,0.9,0.84)
+    #leg= ROOT.TLegend(0.65,0.65,0.9,0.84)
+    leg= ROOT.TLegend(0.5,0.75,0.95,0.94)
     leg.SetFillColor(0)
     leg.SetBorderSize(1)
     leg.SetTextFont(8)
@@ -233,12 +219,30 @@ class CombiPlot:
     leg.AddEntry(tgr_cls_exp,     "Expected Limit","l")
     leg.AddEntry(tgr_cls_exp_pm1, "Expected #pm 1#sigma","f");
     leg.AddEntry(tgr_cls_exp_pm2, "Expected #pm 2#sigma","f");
-    leg.AddEntry(tgr_theory,      "SM-like scenario",'l')
+    leg.AddEntry(tgr_theory,      "SM-like scenario, f_{vbf}=0",'l')
     leg.Draw("same")
 
     tcanvas.SaveAs(self.outputDirPlots+'/'+self.Userflags+'.png')
 
+    ##export values
+    #values[j][i]= ith mass
+    for i in range(Nmass):
+      dirmass=self.Userflags+'/'+str(values[0][i])
+      os.system('mkdir -p '+dirmass)
+      
+      list_alias=['mass','obs','expm2','expm1','exp','expp1','expp2']
+      for j in range(1,7):
+        
+        f=open(dirmass+'/'+list_alias[j]+'.txt','w')
+        f.write(str(values[j][i]))
+        f.close()
 
+      
+      #     #i     # 0       1      2     3    4      5       6 
+      #    print 'mass, ,obs    expm2, expm1, exp, expp1, expp2'
+
+    
+    
 
 def GetXsecScale():
   
@@ -291,6 +295,7 @@ if __name__ == "__main__":
   
   parser = argparse.ArgumentParser(description='JudgementDay')
   parser.add_argument('--userflags', dest='Userflags', default="test")
+  parser.add_argument('--prefix', dest='prefix',help='limit txt file name', default="ExpectedLimit_combine")
   parser.add_argument('--debug', dest='debug', default=0, type=int)
   #parser.add_argument('--scaleToPlot'    , dest='scaleToPlot'    , help='scale of maxY to maxHistoY'                 , default=2.0  ,    type=float   )
   parser.add_argument('--minLogC'        , dest='minLogC'        , help='min Y in log plots'                         , default=None  ,    type=float   )
@@ -359,6 +364,9 @@ if __name__ == "__main__":
     masses.append(int(MASS))
   masses.sort()
 
+  
+
+  #Scales =  GetggHWWXsec()
   Scales =  GetXsecScale()
   com.mkAsymptoticPlot(masses,Scales)
   
