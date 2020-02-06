@@ -19,7 +19,7 @@ for CARDDIR in ${ARR_CARDDIR_YEAR[@]};do
 	MASS=${MASS#Datacard_M}
 	echo $MASS
 	
-	combineCards.py -S MuonChggfBoostedSR=Datacard_M${MASS}/MuonChggfBoostedSR${YEAR}/CleanFatJetPassMBoostedSR_HlnFat_mass/datacard.txt ElectronChggfBoostedSR=Datacard_M${MASS}/ElectronChggfBoostedSR${YEAR}/CleanFatJetPassMBoostedSR_HlnFat_mass/datacard.txt MuonChggfResolvedSR=Datacard_M${MASS}/MuonChggfResolvedSR/LnJJ_mass${YEAR}/datacard.txt ElectronChggfResolvedSR=Datacard_M${MASS}/ElectronChggfResolvedSR${YEAR}/LnJJ_mass/datacard.txt &> Datacard_M${MASS}/combine_M${MASS}.txt
+	combineCards.py -S MuonChggfBoostedSR=Datacard_M${MASS}/MuonChggfBoostedSR${YEAR}/CleanFatJetPassMBoostedSR_HlnFat_mass/datacard.txt ElectronChggfBoostedSR=Datacard_M${MASS}/ElectronChggfBoostedSR${YEAR}/CleanFatJetPassMBoostedSR_HlnFat_mass/datacard.txt MuonChggfResolvedSR=Datacard_M${MASS}/MuonChggfResolvedSR/LnJJ_mass/datacard.txt ElectronChggfResolvedSR=Datacard_M${MASS}/ElectronChggfResolvedSR${YEAR}/LnJJ_mass/datacard.txt &> Datacard_M${MASS}/combine_M${MASS}.txt
 	
     done
 
